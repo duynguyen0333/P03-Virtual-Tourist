@@ -124,7 +124,6 @@
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                     </view>
                     <connections>
-                        <outlet property="flowLayout" destination="GRm-A4-eU3" id="cTr-Fb-u55"/>
                         <outlet property="mapView" destination="We7-qf-eTA" id="4KE-e4-RP4"/>
                         <outlet property="warningLabel" destination="Qcq-zT-3AJ" id="O1Y-Qa-cEl"/>
                     </connections>

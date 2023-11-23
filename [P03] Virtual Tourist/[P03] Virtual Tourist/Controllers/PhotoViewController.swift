@@ -12,8 +12,8 @@ import CoreData
 
 class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsControllerDelegate {
     @IBOutlet weak var mapView: MKMapView!
+    @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var warningLabel: UILabel!
-    @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     
     var coordinate: CLLocationCoordinate2D!
     var photos: [Photo]!
@@ -26,21 +26,30 @@ class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResults
     override func viewDidLoad() {
         super.viewDidLoad()
         warningLabel.isHidden = true
+//        setUpCollectionView()
         setStaticMapView()
 
-        loadData()
+//        if(photos?.count == 0) {
+//            reloadData()
+//        }
+        TouristService.getPhotos(lat: pin.latitude, lon: pin.longitude, page: page, completionHandler: photoSearchResponse(response:error:))
         
     }
     
-    @IBAction func loadData() {
+    @IBAction func reloadData() {
         page += 1
         pageLoading(loading: true)
 
         TouristService.getPhotos(lat: pin.latitude, lon: pin.longitude, page: page, completionHandler: photoSearchResponse(response:error:))
     }
     
+    func reloadPhotos(){
+        collectionView!.reloadData()
+    }
+    
     func photoSearchResponse(response: TouristPhotos?, error: Error?) -> Void {
         if let response = response {
+            photos = []
             let newPhoto = Photo(context: self.dataController.viewContext)
             
             if response.photos.photo.count > 0 {
@@ -63,6 +72,8 @@ class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResults
                             self.pin.addToPhotos(newPhoto)
                             try? self.dataController.viewContext.save()
                             self.photos = (self.pin.photos!.allObjects as! [Photo])
+                            self.reloadPhotos()
+
                         }
                     } else {
                         self.warningLabel.isHidden = false
@@ -79,16 +90,12 @@ class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResults
     func pageLoading(loading: Bool) {
         warningLabel.isEnabled = !loading
     }
-
     
-    func setupLayout(){
-        let space:CGFloat = 3.0
-        let dimension = (view.frame.size.width - (2 * space)) / 3.0
-        
-        flowLayout.minimumInteritemSpacing = space
-        flowLayout.minimumLineSpacing = space
-        flowLayout.itemSize = CGSize(width: dimension, height: dimension)
-    }
+//    func setUpCollectionView() {
+//        collectionView.delegate = self
+//        collectionView.dataSource = self
+//        collectionView!.reloadData()
+//    }
 
     func setStaticMapView() {
         mapView.delegate = self
@@ -122,6 +129,7 @@ class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResults
         return pinView
     }
 }
+
 
 extension PhotoViewController : UICollectionViewDelegate, UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -158,5 +166,6 @@ extension PhotoViewController : UICollectionViewDelegate, UICollectionViewDataSo
         let photo = photos[(indexPath as NSIndexPath).row]
         pin.removeFromPhotos(photo)
         try? dataController.viewContext.save()
+        reloadPhotos()
     }
 }
