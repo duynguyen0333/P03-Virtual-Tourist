@@ -12,11 +12,13 @@ import CoreData
 
 class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsControllerDelegate {
     @IBOutlet weak var mapView: MKMapView!
-    @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var warningLabel: UILabel!
+    @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     
     var coordinate: CLLocationCoordinate2D!
     var photos: [Photo]!
+//    lazy var photos = pin.photos!.allObjects as! [Photo]
+
     var pin: Pin!
     var dataController: DataController!
     var page: Int = 0
@@ -24,28 +26,21 @@ class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResults
     override func viewDidLoad() {
         super.viewDidLoad()
         warningLabel.isHidden = true
-        setUpCollectionView()
         setStaticMapView()
 
-        if(photos?.count == 0) {
-            reloadData()
-        }
+        loadData()
+        
     }
     
-    @IBAction func reloadData() {
+    @IBAction func loadData() {
         page += 1
         pageLoading(loading: true)
+
         TouristService.getPhotos(lat: pin.latitude, lon: pin.longitude, page: page, completionHandler: photoSearchResponse(response:error:))
-    }
-    
-    func reloadPhotos(){
-        //        photos = pin.photos!.allObjects as! [Photo]
-        collectionView!.reloadData()
     }
     
     func photoSearchResponse(response: TouristPhotos?, error: Error?) -> Void {
         if let response = response {
-            photos = []
             let newPhoto = Photo(context: self.dataController.viewContext)
             
             if response.photos.photo.count > 0 {
@@ -54,19 +49,20 @@ class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResults
                 warningLabel.isHidden = false
             }
             
-            for image in response.photos.photo {
-                TouristService.getSizes(photoId: image.id) {(response, error) in
+            for photo in response.photos.photo {
+                TouristService.getSizes(photoId: photo.id) {(response, error) in
                     if let response = response {
                         self.warningLabel.isHidden = true
                         
                         if let addedPhoto = response.sizes.size.first  {
-                            newPhoto.id = image.id
+                            print("GetSize Photo \(addedPhoto.source)")
+                            
+                            newPhoto.id = photo.id
                             newPhoto.source = URL(string: addedPhoto.source)!
                             
                             self.pin.addToPhotos(newPhoto)
                             try? self.dataController.viewContext.save()
-                            self.reloadPhotos()
-                            
+                            self.photos = (self.pin.photos!.allObjects as! [Photo])
                         }
                     } else {
                         self.warningLabel.isHidden = false
@@ -83,11 +79,15 @@ class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResults
     func pageLoading(loading: Bool) {
         warningLabel.isEnabled = !loading
     }
+
     
-    func setUpCollectionView() {
-        collectionView.delegate = self
-        collectionView.dataSource = self
-        collectionView!.reloadData()
+    func setupLayout(){
+        let space:CGFloat = 3.0
+        let dimension = (view.frame.size.width - (2 * space)) / 3.0
+        
+        flowLayout.minimumInteritemSpacing = space
+        flowLayout.minimumLineSpacing = space
+        flowLayout.itemSize = CGSize(width: dimension, height: dimension)
     }
 
     func setStaticMapView() {
@@ -123,13 +123,12 @@ class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResults
     }
 }
 
-
 extension PhotoViewController : UICollectionViewDelegate, UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let yourWidth = collectionView.bounds.width/4.0
-        let yourHeight = yourWidth
+        let width = collectionView.bounds.width/4.0
+        let height = width
 
-        return CGSize(width: yourWidth, height: yourHeight)
+        return CGSize(width: width, height: height)
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -139,6 +138,7 @@ extension PhotoViewController : UICollectionViewDelegate, UICollectionViewDataSo
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "CollectionViewCell", for: indexPath) as! CollectionViewCell
         let photo = photos[(indexPath).row]
+//        print("Current photo \(photo)")
     
         if let source = photo.source {
             TouristService.downloadImage(url: source) {(url, error) in
@@ -158,6 +158,5 @@ extension PhotoViewController : UICollectionViewDelegate, UICollectionViewDataSo
         let photo = photos[(indexPath as NSIndexPath).row]
         pin.removeFromPhotos(photo)
         try? dataController.viewContext.save()
-        reloadPhotos()
     }
 }

@@ -59,11 +59,11 @@ class TouristService {
                 return
             }
             DispatchQueue.main.async {
+                print("Dowloaded \(data)")
+
                 completion(data, nil)
             }
         }
         download.resume()
     }
-
-    
 }
