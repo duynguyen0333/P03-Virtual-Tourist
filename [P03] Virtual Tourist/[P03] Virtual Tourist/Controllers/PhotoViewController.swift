@@ -10,30 +10,27 @@ import UIKit
 import MapKit
 import CoreData
 
-class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsControllerDelegate {
+class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResultsControllerDelegate, UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout {
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var collectionView: UICollectionView!
+    @IBOutlet weak var flowLayout: UICollectionViewFlowLayout!
     @IBOutlet weak var warningLabel: UILabel!
     
-    var coordinate: CLLocationCoordinate2D!
     var photos: [Photo]!
-//    lazy var photos = pin.photos!.allObjects as! [Photo]
-
     var pin: Pin!
     var dataController: DataController!
     var page: Int = 0
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        collectionView?.reloadData()    // removed self
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         warningLabel.isHidden = true
-//        setUpCollectionView()
         setStaticMapView()
-
-//        if(photos?.count == 0) {
-//            reloadData()
-//        }
         TouristService.getPhotos(lat: pin.latitude, lon: pin.longitude, page: page, completionHandler: photoSearchResponse(response:error:))
-        
     }
     
     @IBAction func reloadData() {
@@ -43,37 +40,28 @@ class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResults
         TouristService.getPhotos(lat: pin.latitude, lon: pin.longitude, page: page, completionHandler: photoSearchResponse(response:error:))
     }
     
-    func reloadPhotos(){
-        collectionView!.reloadData()
+    func reloadPhotos() {
+//        collectionView!.reloadData()
     }
     
     func photoSearchResponse(response: TouristPhotos?, error: Error?) -> Void {
         if let response = response {
-            photos = []
-            let newPhoto = Photo(context: self.dataController.viewContext)
-            
-            if response.photos.photo.count > 0 {
-                warningLabel.isHidden = true
-            } else {
-                warningLabel.isHidden = false
-            }
             
             for photo in response.photos.photo {
-                TouristService.getSizes(photoId: photo.id) {(response, error) in
+                TouristService.getSizes(photoId: photo.id ?? "") {(response, error) in
                     if let response = response {
                         self.warningLabel.isHidden = true
                         
-                        if let addedPhoto = response.sizes.size.first  {
-                            print("GetSize Photo \(addedPhoto.source)")
+                        if let newPhoto = response.sizes.size.first  {
+                            print("GetSize Photo \(newPhoto.source)")
+                            let imageURL = URL(string: newPhoto.url)
+                            let currentPhoto = Photo(context: self.dataController.viewContext)
                             
-                            newPhoto.id = photo.id
-                            newPhoto.source = URL(string: addedPhoto.source)!
-                            
-                            self.pin.addToPhotos(newPhoto)
+                            currentPhoto.id = photo.id
+                            currentPhoto.rawImage = try? Data(contentsOf: imageURL!)
+                            currentPhoto.source = URL(string: newPhoto.source)!
                             try? self.dataController.viewContext.save()
-                            self.photos = (self.pin.photos!.allObjects as! [Photo])
-                            self.reloadPhotos()
-
+                            self.photos.append(currentPhoto)
                         }
                     } else {
                         self.warningLabel.isHidden = false
@@ -86,16 +74,18 @@ class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResults
         }
         
     }
-    
-    func pageLoading(loading: Bool) {
-        warningLabel.isEnabled = !loading
+
+    func setupLayout() {
+        // Setup collection view background
+        collectionView.backgroundColor = .white
+
+        let space:CGFloat = 3.0
+        let dimension = (view.frame.size.width - (2 * space)) / 3.0
+        
+        flowLayout.minimumInteritemSpacing = space
+        flowLayout.minimumLineSpacing = space
+        flowLayout.itemSize = CGSize(width: dimension, height: dimension)
     }
-    
-//    func setUpCollectionView() {
-//        collectionView.delegate = self
-//        collectionView.dataSource = self
-//        collectionView!.reloadData()
-//    }
 
     func setStaticMapView() {
         mapView.delegate = self
@@ -128,25 +118,16 @@ class PhotoViewController: UIViewController, MKMapViewDelegate, NSFetchedResults
         
         return pinView
     }
-}
-
-
-extension PhotoViewController : UICollectionViewDelegate, UICollectionViewDataSource {
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let width = collectionView.bounds.width/4.0
-        let height = width
-
-        return CGSize(width: width, height: height)
-    }
     
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    // MARK: Delega function
+     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return photos?.count ?? 0
     }
+
     
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "CollectionViewCell", for: indexPath) as! CollectionViewCell
         let photo = photos[(indexPath).row]
-//        print("Current photo \(photo)")
     
         if let source = photo.source {
             TouristService.downloadImage(url: source) {(url, error) in
@@ -154,6 +135,9 @@ extension PhotoViewController : UICollectionViewDelegate, UICollectionViewDataSo
                     let downloadedImage = UIImage(data: url)
                     if let downloadedImage = downloadedImage {
                         cell.imageView.image = downloadedImage
+                        DispatchQueue.main.sync {
+                            self.collectionView.reloadData()
+                        }
                     }
                 }
             }
@@ -161,11 +145,11 @@ extension PhotoViewController : UICollectionViewDelegate, UICollectionViewDataSo
         cell.imageView.contentMode = .scaleAspectFit
         return cell
     }
+
     
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let photo = photos[(indexPath as NSIndexPath).row]
-        pin.removeFromPhotos(photo)
-        try? dataController.viewContext.save()
-        reloadPhotos()
+    
+    func pageLoading(loading: Bool) {
+        warningLabel.isEnabled = !loading
     }
+    
 }

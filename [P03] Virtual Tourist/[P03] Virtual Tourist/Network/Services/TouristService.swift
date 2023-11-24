@@ -30,19 +30,20 @@ class TouristService {
         let params =  "lat=\(lat)&lon=\(lon)&page=\(page)"
         
         ServiceComand.taskForGetRequest(url: TouristService.Endpoint.search(params).url, responseType: TouristPhotos.self ) { response, error in
-            if let response = response {
+            if let response = response {        
                 completionHandler(response, nil)
             } else {
                 completionHandler(nil, error)
             }
         }
     }
-    
+                
     class func getSizes(photoId: String, completionHandler: @escaping (Sizes?, Error?) -> Void) {
         let params =  "photo_id=\(photoId)"
         
         ServiceComand.taskForGetRequest(url: TouristService.Endpoint.getSizes(params).url, responseType: Sizes.self ) { response, error in
             if let response = response {
+                
                 completionHandler(response, nil)
             } else {
                 completionHandler(nil, error)
@@ -51,19 +52,25 @@ class TouristService {
     }
     
     class func downloadImage(url: URL, completion: @escaping (Data?, Error?) -> Void) {
-        let download = URLSession.shared.dataTask(with: url) { (data, response, error) in
+        let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
+            if let error = error {
+                print("Error loading image: \(error.localizedDescription)")
+                completion(nil, error)
+                return
+            }
+            
             guard let data = data else {
                 DispatchQueue.main.async {
                     completion(nil, error)
                 }
                 return
             }
+            
             DispatchQueue.main.async {
                 print("Dowloaded \(data)")
-
                 completion(data, nil)
             }
         }
-        download.resume()
+        task.resume()
     }
 }

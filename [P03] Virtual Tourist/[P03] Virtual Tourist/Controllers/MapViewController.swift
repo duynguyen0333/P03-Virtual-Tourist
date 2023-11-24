@@ -44,7 +44,7 @@ class MapViewController : UIViewController, UIGestureRecognizerDelegate {
     @objc func tapPinAction(gestureReconizer: UIGestureRecognizer) {
         if gestureReconizer.state == UIGestureRecognizer.State.began {
             let location = gestureReconizer.location(in: mapView)
-            let coordinate = mapView.convert(location,toCoordinateFrom: mapView)
+            let coordinate = mapView.convert(location, toCoordinateFrom: mapView)
             
             let pin = Pin(context: dataController.viewContext)
             pin.latitude = coordinate.latitude.magnitude
@@ -75,7 +75,7 @@ class MapViewController : UIViewController, UIGestureRecognizerDelegate {
             annotation.coordinate = coordinate
             annotations.append(annotation)
         }
-        // When the array is complete, add the annotations to the map.
+        
         mapView.addAnnotations(annotations)
     }
 }
@@ -110,12 +110,9 @@ extension MapViewController : MKMapViewDelegate {
         let controller = self.storyboard!.instantiateViewController(withIdentifier: "PhotoViewController") as? PhotoViewController
         
         for pin in pins {
-            if pin.latitude.isEqual(to: view.annotation?.coordinate.latitude.magnitude ?? 90){
-                controller?.pin = pin
-            }
+            controller?.pin = pin
         }
         // Passing coordinate to the 2nd screen
-        controller?.coordinate = view.annotation?.coordinate
         controller?.dataController = dataController
         self.show(controller!, sender: nil)
     }

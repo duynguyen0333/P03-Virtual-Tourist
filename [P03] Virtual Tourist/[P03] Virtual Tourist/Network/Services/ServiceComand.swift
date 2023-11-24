@@ -8,7 +8,7 @@
 import Foundation
 
 class ServiceComand {
-    class func taskForGetRequest<ResponseType: Decodable>(url: URL, responseType: ResponseType.Type, completionHandler: @escaping (ResponseType?, Error?) -> Void) -> URLSessionTask {
+    class func taskForGetRequest<ResponseType: Decodable>(url: URL, responseType: ResponseType.Type?, completionHandler: @escaping (ResponseType?, Error?) -> Void) -> URLSessionTask {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.addValue("application/json", forHTTPHeaderField: "Accept")
@@ -16,7 +16,7 @@ class ServiceComand {
     
         let task = URLSession.shared.dataTask(with: url) { data, response, error in
             print("Response Image \(data)")
-            handleResponse(data: data, error: error,  responseType: responseType, completionHandler: completionHandler)
+            handleResponse(data: data, error: error,  responseType: responseType!, completionHandler: completionHandler)
         }
         task.resume()
         return task
@@ -52,5 +52,4 @@ class ServiceComand {
             completionHandler(nil, error)
         }
     }
-
 }
