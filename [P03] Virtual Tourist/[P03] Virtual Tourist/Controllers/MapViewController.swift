@@ -114,6 +114,8 @@ extension MapViewController : MKMapViewDelegate {
         }
         // Passing coordinate to the 2nd screen
         controller?.dataController = dataController
+        controller?.coordinate = view.annotation?.coordinate
+        
         self.show(controller!, sender: nil)
     }
 }
