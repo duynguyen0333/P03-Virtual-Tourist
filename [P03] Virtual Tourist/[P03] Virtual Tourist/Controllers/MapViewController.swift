@@ -22,9 +22,15 @@ class MapViewController : UIViewController, UIGestureRecognizerDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.navigationItem.title = "Maps"
+
         let appDelegate = UIApplication.shared.delegate as! AppDelegate
         dataController = appDelegate.dataController
-        
+    
+        handlTapPin()
+    }
+    
+    func handlTapPin() {
         let gestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(tapPinAction))
         gestureRecognizer.delegate = self
         mapView.addGestureRecognizer(gestureRecognizer)
@@ -47,8 +53,8 @@ class MapViewController : UIViewController, UIGestureRecognizerDelegate {
             let coordinate = mapView.convert(location, toCoordinateFrom: mapView)
             
             let pin = Pin(context: dataController.viewContext)
-            pin.latitude = coordinate.latitude.magnitude
-            pin.longitude = coordinate.longitude.magnitude
+            pin.lat = coordinate.latitude.magnitude
+            pin.lon = coordinate.longitude.magnitude
             do {
                 try dataController.viewContext.save()
             } catch{
@@ -67,8 +73,8 @@ class MapViewController : UIViewController, UIGestureRecognizerDelegate {
         var annotations = [MKPointAnnotation]()
         
         for pin in pins {
-            let lat = CLLocationDegrees(pin.latitude)
-            let long = CLLocationDegrees(pin.longitude)
+            let lat = CLLocationDegrees(pin.lat)
+            let long = CLLocationDegrees(pin.lon)
             let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: long)
             let annotation = MKPointAnnotation()
             
@@ -115,7 +121,6 @@ extension MapViewController : MKMapViewDelegate {
         // Passing coordinate to the 2nd screen
         controller?.dataController = dataController
         controller?.coordinate = view.annotation?.coordinate
-        
         self.show(controller!, sender: nil)
     }
 }
