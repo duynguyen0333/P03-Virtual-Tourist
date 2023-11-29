@@ -16,21 +16,20 @@ class MapViewController : UIViewController, UIGestureRecognizerDelegate {
     var pins: [Pin] = []
     var dataController: DataController!
     
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.navigationItem.title = "Maps"
+        handlTapPin()
+    }
+    
     override func viewWillAppear(_ animated: Bool) {
         setupAnnotations()
     }
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        self.navigationItem.title = "Maps"
-
+    func handlTapPin() {
         let appDelegate = UIApplication.shared.delegate as! AppDelegate
         dataController = appDelegate.dataController
-    
-        handlTapPin()
-    }
-    
-    func handlTapPin() {
+        
         let gestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(tapPinAction))
         gestureRecognizer.delegate = self
         mapView.addGestureRecognizer(gestureRecognizer)
@@ -40,8 +39,6 @@ class MapViewController : UIViewController, UIGestureRecognizerDelegate {
             let result = try dataController.viewContext.fetch(fetchRequest)
             pins = result
             mapView.removeAnnotations(mapView.annotations)
-            setupAnnotations()
-
         } catch {
             print("Error \(error.localizedDescription)")
         }
@@ -58,10 +55,10 @@ class MapViewController : UIViewController, UIGestureRecognizerDelegate {
             do {
                 try dataController.viewContext.save()
             } catch{
-                print("error")
+                print("error \(error.localizedDescription)")
             }
-            
             pins.append(pin)
+            
             let annotation = MKPointAnnotation()
             annotation.coordinate = coordinate
             mapView.addAnnotation(annotation)
@@ -76,12 +73,11 @@ class MapViewController : UIViewController, UIGestureRecognizerDelegate {
             let lat = CLLocationDegrees(pin.lat)
             let long = CLLocationDegrees(pin.lon)
             let coordinate = CLLocationCoordinate2D(latitude: lat, longitude: long)
-            let annotation = MKPointAnnotation()
             
+            let annotation = MKPointAnnotation()
             annotation.coordinate = coordinate
             annotations.append(annotation)
         }
-        
         mapView.addAnnotations(annotations)
     }
 }
@@ -114,10 +110,13 @@ extension MapViewController : MKMapViewDelegate {
     
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
         let controller = self.storyboard!.instantiateViewController(withIdentifier: "PhotoViewController") as? PhotoViewController
-        
+    
         for pin in pins {
-            controller?.pin = pin
+            if pin.lat.isEqual(to: view.annotation?.coordinate.latitude.magnitude ?? 0){
+                controller?.pin = pin
+            }
         }
+        
         // Passing coordinate to the 2nd screen
         controller?.dataController = dataController
         controller?.coordinate = view.annotation?.coordinate

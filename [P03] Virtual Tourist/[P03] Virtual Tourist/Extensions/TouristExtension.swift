@@ -23,7 +23,7 @@ extension TouristService {
         static let Total = "total"
         static let Photos = "photos"
         static let Photo = "photo"
-        static let MediumURL = "url_m"
+        static let URL = "url_m"
     }
     
     struct ResponseValues {
@@ -33,7 +33,6 @@ extension TouristService {
     struct ParameterKeys {
         static let Method = "method"
         static let Format = "format"
-        static let Extras = "extras"
         static let NoJsonCallback = "nojsoncallback"
         static let SafeSearch = "safe_search"
         static let Text = "text"
@@ -41,6 +40,7 @@ extension TouristService {
         static let Longitude = "lon"
         static let Page = "page"
         static let PerPage = "per_page"
+        static let Extras = "extras"
         static let APIKey = "api_key"
     }
     

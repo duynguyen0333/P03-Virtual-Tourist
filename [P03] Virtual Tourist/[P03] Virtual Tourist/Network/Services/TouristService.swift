@@ -14,7 +14,7 @@ class TouristService {
         
         let parameters = buildParameters(coordinate: coordinate)
         
-        let task = URLSession.shared.dataTask(with: URLRequest(url: buildURL(parameters))) { (data, response, error) in
+        let task = URLSession.shared.dataTask(with: URLRequest(url: buildURL(parameters))) {(data, response, error) in
             let parsedData: [String:AnyObject]!
 
             guard (error == nil) else {
@@ -44,9 +44,9 @@ class TouristService {
                     return
                 }
                 
-                let pageLimit = min(pages, 40)
-                let randomPage = Int(arc4random_uniform(UInt32(pageLimit))) + 1
-                let _ = self.getPhotosBySearch(parameters, pageNumber: randomPage, completionHandler: { (results, error) in
+                let pageRange = min(pages, 100)
+                let randomPage = Int(arc4random_uniform(UInt32(pageRange))) + 1
+                self.getPhotosBySearch(parameters, pageNumber: randomPage, completionHandler: {(results, error) in
                     completionHandler(results, error)
                 })
             } catch {
@@ -61,11 +61,11 @@ class TouristService {
         
         
     private func getPhotosBySearch(_ parameters: [String: AnyObject], pageNumber: Int, completionHandler: @escaping (_ result: [[String:Any]], _ error: Error?) -> Void) -> URLSessionDataTask {
-        
         var parametersWithPageNumber = parameters
         parametersWithPageNumber[TouristService.ParameterKeys.Page] = pageNumber as AnyObject?
         
-        let task = URLSession.shared.dataTask(with: URLRequest(url: buildURL(parametersWithPageNumber))) {(data, response, error) in
+        let url = URLRequest(url: buildURL(parametersWithPageNumber))
+        let task = URLSession.shared.dataTask(with: url) {(data, response, error) in
             let parsedData: [String:AnyObject]!
             
             guard (error == nil) else {
